@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
+import json
+import itertools
 import numpy as np
 import pandas as pd
 import torch
@@ -10,22 +12,19 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # ==========================================
-# 1. 전역 하이퍼파라미터 및 환경 설정
+# 1. 자동 탐색(Search) 하이퍼파라미터 후보군 정의
 # ==========================================
-
-
-HYPERPARAMS = {
-    "hidden_dims": [64, 32],      
-    "learning_rate": 0.001,
-    "epochs": 100,               
-    "batch_size": 256,
-    "dropout_rate": 0.1,
-    "patience": 5                
+TUNING_GRID = {
+    "hidden_dims": [[64, 32], [32, 16]],  # 탐색할 은닉층 구조 후보
+    "learning_rate": [0.001, 0.005],             # 탐색할 학습률 후보
+    "batch_size":[256],
+    "dropout_rate": [0.1,0.2],
+    "max_epochs":[100],
+    "patience": [5]                       # 연속 5회 기준 손실 미개선 시 조기 종료
 }
 
-OUTPUT_DTIME = pd.to_datetime('now').strftime('%Y%m%d%H%M%S')
-
-OUTPUT_EXCEL_FILE = f"experiment_epoch_mse_results.{OUTPUT_DTIME}.xlsx"
+OUTPUT_DT = pd.to_datetime('now').strftime('%Y%m%d%H%M%S')
+OUTPUT_EXCEL_FILE = f"experiment_5_cases_results.{OUTPUT_DT}.xlsx"
 
 # ==========================================
 # 2. Early Stopping 제어 클래스 정의
@@ -36,12 +35,14 @@ class EarlyStopping:
         self.min_delta = min_delta
         self.counter = 0
         self.best_loss = float('inf')
+        self.best_epoch = 0
         self.early_stop = False
         self.best_model_state = None
 
-    def __call__(self, val_loss, model):
-        if val_loss < self.best_loss - self.min_delta:
-            self.best_loss = val_loss
+    def __call__(self, monitor_loss, epoch, model):
+        if monitor_loss < self.best_loss - self.min_delta:
+            self.best_loss = monitor_loss
+            self.best_epoch = epoch
             self.best_model_state = model.state_dict().copy()
             self.counter = 0
         else:
@@ -73,7 +74,6 @@ class GenerationPredictor(nn.Module):
 # ==========================================
 def preprocess_time_series(df):
     df = df.copy()
-    
     df['reg_dt'] = pd.to_datetime(df['reg_dt'])
     df = df.sort_values('reg_dt').reset_index(drop=True)
     
@@ -96,7 +96,7 @@ def preprocess_time_series(df):
 # ==========================================
 # 5. 세션 학습 엔진 및 에폭별 MSE 기록 인터페이스
 # ==========================================
-def run_model_session(X_train, y_train, X_val, y_val, X_test, y_test, scaler=None):
+def run_model_session(X_train, y_train, X_val, y_val, X_test, y_test, config, scaler=None):
     if scaler is not None:
         X_train_arr = scaler.fit_transform(X_train)
         X_val_arr = scaler.transform(X_val) if X_val is not None else None
@@ -108,7 +108,7 @@ def run_model_session(X_train, y_train, X_val, y_val, X_test, y_test, scaler=Non
 
     train_dataset = TensorDataset(torch.tensor(X_train_arr, dtype=torch.float32), 
                                   torch.tensor(y_train, dtype=torch.float32))
-    train_loader = DataLoader(train_dataset, batch_size=HYPERPARAMS["batch_size"], shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=config["batch_size"], shuffle=False)
     
     t_train_x, t_train_y = torch.tensor(X_train_arr, dtype=torch.float32), torch.tensor(y_train, dtype=torch.float32)
     t_val_x, t_val_y = (torch.tensor(X_val_arr, dtype=torch.float32), torch.tensor(y_val, dtype=torch.float32)) if X_val_arr is not None else (None, None)
@@ -116,16 +116,17 @@ def run_model_session(X_train, y_train, X_val, y_val, X_test, y_test, scaler=Non
 
     input_features_dim = X_train_arr.shape[1]
     model = GenerationPredictor(input_dim=input_features_dim, 
-                                hidden_dims=HYPERPARAMS["hidden_dims"],
-                                dropout_rate=HYPERPARAMS["dropout_rate"])
+                                hidden_dims=config["hidden_dims"],
+                                dropout_rate=config["dropout_rate"])
     
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=HYPERPARAMS["learning_rate"])
+    optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"])
     
-    early_stopping = EarlyStopping(patience=HYPERPARAMS["patience"])
+    early_stopping = EarlyStopping(patience=config["patience"])
     epoch_mse_history = []
+    last_epoch = config["max_epochs"]
 
-    for epoch in range(HYPERPARAMS["epochs"]):
+    for epoch in range(config["max_epochs"]):
         model.train()
         for batch_x, batch_y in train_loader:
             optimizer.zero_grad()
@@ -140,10 +141,10 @@ def run_model_session(X_train, y_train, X_val, y_val, X_test, y_test, scaler=Non
             
             if t_val_x is not None:
                 val_mse = criterion(model(t_val_x), t_val_y).item()
-                monitor_loss = val_mse   
+                monitor_loss = val_mse   # 6:2:2 구조는 Val MSE 기준으로 조기종료 및 베스트 추적
             else:
                 val_mse = None
-                monitor_loss = test_mse  
+                monitor_loss = test_mse  # 8:2 구조는 별도 검증셋이 없으므로 Test MSE 기준으로 추적
 
         epoch_record = {
             "Epoch": epoch + 1,
@@ -153,12 +154,13 @@ def run_model_session(X_train, y_train, X_val, y_val, X_test, y_test, scaler=Non
         }
         epoch_mse_history.append(epoch_record)
         
-        early_stopping(monitor_loss, model)
+        early_stopping(monitor_loss, epoch + 1, model)
         if early_stopping.early_stop:
-            print(f"   ↪ [Early Stopping] 에폭 {epoch + 1}에서 조기 종료.")
+            last_epoch = epoch + 1
             model.load_state_dict(early_stopping.best_model_state)
             break
 
+    # 최적 시점(Best Epoch) 가중치 상태에서 최종 성능 복원 및 평가
     model.eval()
     with torch.no_grad():
         final_preds = model(t_test_x).numpy()
@@ -168,101 +170,98 @@ def run_model_session(X_train, y_train, X_val, y_val, X_test, y_test, scaler=Non
     final_r2 = r2_score(y_test, final_preds)
     final_rmse = np.sqrt(final_mse)
     
-    metrics = {"MSE": final_mse, "MAE": final_mae, "R2": final_r2, "RMSE": final_rmse}
+    metrics = {
+        "MSE": final_mse, "MAE": final_mae, "R2": final_r2, "RMSE": final_rmse,
+        "Best_MSE": final_mse,  # 베스트 에폭 가중치 시점의 최종 Test 데이터 기준 MSE
+        "Best_Epoch": early_stopping.best_epoch,
+        "Last_Epoch": last_epoch
+    }
     return metrics, epoch_mse_history
 
 # ==========================================
-# 6. 전체 구동 메인 제어문 (비교 시트 1개 + 개별 에폭 시트 4개)
+# 6. 메인 제어문 (수정 조건 반영 5대 케이스 실험 가동)
 # ==========================================
 def main():
     df = pd.read_csv("./assets/dataset_datagokr_dongseo_cb20_24.csv")
     
     print("🤖 시계열 데이터 파이프라인 인프라 구축 중...")
-    # date_range = pd.date_range(start="2020-01-01 00:00", periods=5000, freq="h")
-    # dummy_data = {
-    #     "capacity_mw": np.random.uniform(170, 180, 5000), "reg_dt": date_range,
-    #     "temp": np.random.uniform(-10, 35, 5000), "precip_mm": np.random.uniform(0, 5, 5000),
-    #     "relhumid": np.random.uniform(30, 90, 5000), "snow_mm": np.random.uniform(0, 0.5, 5000),
-    #     "windspd": np.random.uniform(0.5, 6.0, 5000), "cumulus_10th": np.random.randint(0, 10, 5000),
-    #     "cumulus_3rd": np.random.randint(0, 5, 5000), "sun_duration_hr": np.random.uniform(0, 1, 5000),
-    #     "extra_rad": np.random.uniform(0, 400, 5000), "rad": np.random.uniform(0, 300, 5000),
-    #     "gen_mwh": np.random.uniform(10, 150, 5000), "is_leapyr": np.random.choice(['Y', 'N'], 5000)
-    # }
-    # df = pd.DataFrame(dummy_data)
     
     X, y = preprocess_time_series(df)
     total_len = len(df)
     
-    # 종합 요약 지표 리포트용 컨테이너
     summary_metrics_list = []
-    
-    # 각 시트별 데이터프레임을 보관할 딕셔너리
     sheet_data_dict = {}
-        
+
+    keys, values = zip(*TUNING_GRID.items())
+    experiments_configs = [dict(zip(keys, v)) for v in itertools.product(*values)]
+    
     # ----------------------------------------------------
-    # [테스트 1] Train:Test (8:2) / Scaler: None
+    # 데이터셋 구조 분할 선행 정의 (순서 보존 슬라이싱)
     # ----------------------------------------------------
+    # [8:2] 데이터셋 분할
     split_82 = int(total_len * 0.8)
     X_train_82, X_test_82 = X.iloc[:split_82], X.iloc[split_82:]
     y_train_82, y_test_82 = y[:split_82], y[split_82:]
     
-    print("\n📈 실험 1: Split 8-2 (Scaler: None) 학습 가동...")
-    metrics_82, history_82 = run_model_session(X_train_82, y_train_82, None, None, X_test_82, y_test_82, scaler=None)
-    
-    summary_metrics_list.append({
-        "Data_Split": "8:2", "Scaler": "None", "Hidden_Dims": str(HYPERPARAMS["hidden_dims"]),
-        "LR": HYPERPARAMS["learning_rate"], "MSE": metrics_82["MSE"], "MAE": metrics_82["MAE"], 
-        "R2": metrics_82["R2"], "RMSE": metrics_82["RMSE"]
-    })
-    sheet_data_dict["Split_8-2_No_Scaler"] = pd.DataFrame(history_82)
-    
-    # ----------------------------------------------------
-    # [테스트 2, 3, 4] Train:Val:Test (6:2:2) / Scaler 3종
-    # ----------------------------------------------------
+    # [6:2:2] 데이터셋 분할
     split_60 = int(total_len * 0.6)
     split_80 = int(total_len * 0.8)
-    
     X_train_622 = X.iloc[:split_60]
     X_val_622 = X.iloc[split_60:split_80]
     X_test_622 = X.iloc[split_80:]
-    
     y_train_622 = y[:split_60]
     y_val_622 = y[split_60:split_80]
     y_test_622 = y[split_80:]
-    
-    scalers = {
-        "StandardScaler": StandardScaler(),
-        "MinMaxScaler": MinMaxScaler(),
-        "RobustScaler": RobustScaler()
-    }
-    
-    for name, scaler in scalers.items():
-        print(f"📊 실험 2: Split 6-2-2 (Scaler: {name}) 학습 가동...")
-        metrics_622, history_622 = run_model_session(X_train_622, y_train_622, X_val_622, y_val_622, X_test_622, y_test_622, scaler=scaler)
+
+    # 하이퍼파라미터 루프 실행
+    for idx, config in enumerate(experiments_configs):
+        run_id = idx + 1
+        print(f"\n🚀 [조합 실험 {run_id}/{len(experiments_configs)}] 파라미터 조합 검증 개시...")
         
+        # 테스트#1) Train:Test (8:2) 및 Scaler 미적용
+        m1, h1 = run_model_session(X_train_82, y_train_82, None, None, X_test_82, y_test_82, config, scaler=None)
         summary_metrics_list.append({
-            "Data_Split": "6:2:2", "Scaler": name, "Hidden_Dims": str(HYPERPARAMS["hidden_dims"]),
-            "LR": HYPERPARAMS["learning_rate"], "MSE": metrics_622["MSE"], "MAE": metrics_622["MAE"], 
-            "R2": metrics_622["R2"], "RMSE": metrics_622["RMSE"]
+            "Run_ID": f"Run_{run_id}", "Test_No": "테스트#1", "Data_Split": "8:2", "Scaler": "None", 
+            "Hidden_Dims": str(config["hidden_dims"]), "LR": config["learning_rate"], 
+            "MSE": m1["MSE"], "MAE": m1["MAE"], "R2": m1["R2"], "RMSE": m1["RMSE"],
+            "Best_MSE(Test)": m1["Best_MSE"], "Best_Epoch": m1["Best_Epoch"], "Last_Epoch": m1["Last_Epoch"]
         })
-        sheet_data_dict[f"Split_6-2-2_{name}"] = pd.DataFrame(history_622)
-
-    # --------------------------------
-    # ====================# 
-    # [멀티 시트 저장부] 최종 엑셀 빌드 및 파일 쓰기 가동
-    # # --------------------------------
-    # ====================
-    df_summary = pd.DataFrame(summary_metrics_list)
-    writer = pd.ExcelWriter(OUTPUT_EXCEL_FILE, engine='openpyxl')
-
-    # 시트 1: 통합 테스트별 평가지표 비교 리포트 생성
-    df_summary.to_excel(writer, sheet_name="Model_Comparison_Report", index=False)
-    # 시트 2~5: 순차 루프 기반 에폭 정보 시트 적재
-    for sheet_name, df_history in sheet_data_dict.items():
-        df_history.to_excel(writer, sheet_name=sheet_name, index=False)
+        sheet_data_dict[f"Run{run_id}_T1_82_None"] = pd.DataFrame(h1)
         
-    writer.close()
-    print(f"\n🎉 [컴파일 성공] 요약 리포트 1개 + 개별 에폭 추이 4개 통합 엑셀 저장 완료 -> 파일명: {OUTPUT_EXCEL_FILE}")
+        # 테스트#2) Train:Val:Test (6:2:2) 및 Scaler 미적용
+        m2, h2 = run_model_session(X_train_622, y_train_622, X_val_622, y_val_622, X_test_622, y_test_622, config, scaler=None)
+        summary_metrics_list.append({"Run_ID": f"Run_{run_id}", "Test_No": "테스트#2", "Data_Split": "6:2:2", "Scaler": "None","Hidden_Dims": str(config["hidden_dims"]), 
+        "LR": config["learning_rate"],"MSE": m2["MSE"], "MAE": m2["MAE"], "R2": m2["R2"], "RMSE": m2["RMSE"],"Best_MSE(Test)": m2["Best_MSE"], 
+        "Best_Epoch": m2["Best_Epoch"], "Last_Epoch": m2["Last_Epoch"]})
+        sheet_data_dict[f"Run{run_id}_T2_622_None"] = pd.DataFrame(h2)
+
+        # 6:2:2 기반의 스케일러 매핑 딕셔너리 구성 (테스트 #3, #4, #5)
+        scalers_622 = {"테스트#3_StandardScaler": StandardScaler(),"테스트#4_MinMaxScaler": MinMaxScaler(),"테스트#5_RobustScaler": RobustScaler()}
+
+        for case_name, scaler in scalers_622.items():
+            test_no, scaler_name = case_name.split("_")
+            m_case, h_case = run_model_session(X_train_622, y_train_622, X_val_622, y_val_622, X_test_622, y_test_622, config, scaler=scaler)
+            summary_metrics_list.append({"Run_ID": f"Run_{run_id}", "Test_No": test_no, "Data_Split": "6:2:2", "Scaler": scaler_name,"Hidden_Dims": str(config["hidden_dims"]), 
+                "LR": config["learning_rate"],"MSE": m_case["MSE"], "MAE": m_case["MAE"], "R2": m_case["R2"], "RMSE": m_case["RMSE"],"Best_MSE(Test)": m_case["Best_MSE"], 
+            "Best_Epoch": m_case["Best_Epoch"], "Last_Epoch": m_case["Last_Epoch"]})
+            sheet_data_dict[f"Run{run_id}{test_no}{scaler_name}"] = pd.DataFrame(h_case)
+
+        # ----------------------------------------------------
+        # 최종 멀티 시트 엑셀 컴파일
+        # ----------------------------------------------------
+        df_summary = pd.DataFrame(summary_metrics_list)
+        writer = pd.ExcelWriter(OUTPUT_EXCEL_FILE, engine='openpyxl')
+        # 1번 시트: 총 5개 테스트 케이스 총괄 결과 비교표 저장
+        df_summary.to_excel(writer, sheet_name="Tuning_Comparison_Report", index=False)
+        # 나머지 시트: 개별 테스트의 에폭 경과 로그 파일 세팅
+        for sheet_name, df_history in sheet_data_dict.items():
+            safe_sheet_name = sheet_name.replace("#", "")[:30] 
+
+            # 특수문자 완화 및 31자 제한 우회
+            df_history.to_excel(writer, sheet_name=safe_sheet_name, index=False)
+        writer.close()
+
+    print(f"\n🎉 [완료] 수정된 5개 테스트 케이스 실험 완료. 결과 저장 파일: {OUTPUT_EXCEL_FILE}")
 
 if __name__ == "__main__":
     main()
