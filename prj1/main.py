@@ -15,16 +15,24 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 # 1. 자동 탐색(Search) 하이퍼파라미터 후보군 정의
 # ==========================================
 TUNING_GRID = {
-    "hidden_dims": [[64, 32], [32, 16]],  # 탐색할 은닉층 구조 후보
-    "learning_rate": [0.001, 0.005],             # 탐색할 학습률 후보
+    "hidden_dims": [[64, 32],
+                    # [32, 16]
+    ],  # 탐색할 은닉층 구조 후보
+    "learning_rate": [
+        # 0.001, 
+        0.005
+    ],             # 탐색할 학습률 후보
     "batch_size":[256],
-    "dropout_rate": [0.1,0.2],
+    "dropout_rate": [
+        0.1,
+        # 0.2
+    ],
     "max_epochs":[100],
     "patience": [5]                       # 연속 5회 기준 손실 미개선 시 조기 종료
 }
 
 OUTPUT_DT = pd.to_datetime('now').strftime('%Y%m%d%H%M%S')
-OUTPUT_EXCEL_FILE = f"experiment_5_cases_results.{OUTPUT_DT}.xlsx"
+OUTPUT_EXCEL_FILE = f"alt_experiment_5_cases_results.{OUTPUT_DT}.xlsx"
 
 # ==========================================
 # 2. Early Stopping 제어 클래스 정의
@@ -222,7 +230,7 @@ def main():
         m1, h1 = run_model_session(X_train_82, y_train_82, None, None, X_test_82, y_test_82, config, scaler=None)
         summary_metrics_list.append({
             "Run_ID": f"Run_{run_id}", "Test_No": "테스트#1", "Data_Split": "8:2", "Scaler": "None", 
-            "Hidden_Dims": str(config["hidden_dims"]), "LR": config["learning_rate"], 
+            "Hidden_Dims": str(config["hidden_dims"]), "LR": config["learning_rate"], "Dropout": config["dropout_rate"],
             "MSE": m1["MSE"], "MAE": m1["MAE"], "R2": m1["R2"], "RMSE": m1["RMSE"],
             "Best_MSE(Test)": m1["Best_MSE"], "Best_Epoch": m1["Best_Epoch"], "Last_Epoch": m1["Last_Epoch"]
         })
@@ -231,18 +239,27 @@ def main():
         # 테스트#2) Train:Val:Test (6:2:2) 및 Scaler 미적용
         m2, h2 = run_model_session(X_train_622, y_train_622, X_val_622, y_val_622, X_test_622, y_test_622, config, scaler=None)
         summary_metrics_list.append({"Run_ID": f"Run_{run_id}", "Test_No": "테스트#2", "Data_Split": "6:2:2", "Scaler": "None","Hidden_Dims": str(config["hidden_dims"]), 
-        "LR": config["learning_rate"],"MSE": m2["MSE"], "MAE": m2["MAE"], "R2": m2["R2"], "RMSE": m2["RMSE"],"Best_MSE(Test)": m2["Best_MSE"], 
-        "Best_Epoch": m2["Best_Epoch"], "Last_Epoch": m2["Last_Epoch"]})
+        "LR": config["learning_rate"], "Dropout": config["dropout_rate"], "MSE": m2["MSE"], "MAE": m2["MAE"], "R2": m2["R2"], 
+        "RMSE": m2["RMSE"],"Best_MSE(Test)": m2["Best_MSE"], "Best_Epoch": m2["Best_Epoch"], "Last_Epoch": m2["Last_Epoch"]})
         sheet_data_dict[f"Run{run_id}_T2_622_None"] = pd.DataFrame(h2)
 
         # 6:2:2 기반의 스케일러 매핑 딕셔너리 구성 (테스트 #3, #4, #5)
-        scalers_622 = {"테스트#3_StandardScaler": StandardScaler(),"테스트#4_MinMaxScaler": MinMaxScaler(),"테스트#5_RobustScaler": RobustScaler()}
+        scalers_82 = {"테스트#3'_StandardScaler": StandardScaler(),"테스트#4_MinMaxScaler": MinMaxScaler(),"테스트#5_RobustScaler": RobustScaler()}
+        scalers_622 = {"테스트#6_StandardScaler": StandardScaler(),"테스트#7_MinMaxScaler": MinMaxScaler(),"테스트#8_RobustScaler": RobustScaler()}
+
+        for case_name, scaler in scalers_82.items():
+            test_no, scaler_name = case_name.split("_")
+            m_case, h_case = run_model_session(X_train_82, y_train_82, None, None, X_test_82, y_test_82, config, scaler=scaler)
+            summary_metrics_list.append({"Run_ID": f"Run_{run_id}", "Test_No": test_no, "Data_Split": "8:2", "Scaler": scaler_name,"Hidden_Dims": str(config["hidden_dims"]), 
+                "LR": config["learning_rate"], "Dropout": config["dropout_rate"] ,"MSE": m_case["MSE"], "MAE": m_case["MAE"], "R2": m_case["R2"], "RMSE": m_case["RMSE"],"Best_MSE(Test)": m_case["Best_MSE"], 
+            "Best_Epoch": m_case["Best_Epoch"], "Last_Epoch": m_case["Last_Epoch"]})
+            sheet_data_dict[f"Run{run_id}{test_no}{scaler_name}"] = pd.DataFrame(h_case)
 
         for case_name, scaler in scalers_622.items():
             test_no, scaler_name = case_name.split("_")
             m_case, h_case = run_model_session(X_train_622, y_train_622, X_val_622, y_val_622, X_test_622, y_test_622, config, scaler=scaler)
             summary_metrics_list.append({"Run_ID": f"Run_{run_id}", "Test_No": test_no, "Data_Split": "6:2:2", "Scaler": scaler_name,"Hidden_Dims": str(config["hidden_dims"]), 
-                "LR": config["learning_rate"],"MSE": m_case["MSE"], "MAE": m_case["MAE"], "R2": m_case["R2"], "RMSE": m_case["RMSE"],"Best_MSE(Test)": m_case["Best_MSE"], 
+                "LR": config["learning_rate"], "Dropout": config["dropout_rate"] ,"MSE": m_case["MSE"], "MAE": m_case["MAE"], "R2": m_case["R2"], "RMSE": m_case["RMSE"],"Best_MSE(Test)": m_case["Best_MSE"], 
             "Best_Epoch": m_case["Best_Epoch"], "Last_Epoch": m_case["Last_Epoch"]})
             sheet_data_dict[f"Run{run_id}{test_no}{scaler_name}"] = pd.DataFrame(h_case)
 
