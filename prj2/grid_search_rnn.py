@@ -195,7 +195,7 @@ def run(args):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('--csv', default='ETTm2.csv')
+    p.add_argument('--csv', default='./assets/ETTm2.csv')
     p.add_argument('--out', default='results/grid_search_ot')
     p.add_argument('--batch', type=int, default=32)
     p.add_argument('--epochs', type=int, default=30)
