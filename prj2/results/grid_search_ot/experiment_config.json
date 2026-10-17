@@ -1,0 +1,168 @@
+{
+  "features": [
+    "HUFL",
+    "HULL",
+    "MUFL",
+    "MULL",
+    "LUFL",
+    "LULL",
+    "OT"
+  ],
+  "target": "OT",
+  "seq_len": 672,
+  "horizon": 96,
+  "train_end": 48776,
+  "val_end": 59228,
+  "rows": 69680,
+  "batch": 32,
+  "epochs": 30,
+  "patience": 5,
+  "seed": 42,
+  "grid": [
+    {
+      "hidden_size": 32,
+      "num_layers": 1,
+      "learning_rate": 0.001,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 1,
+      "learning_rate": 0.0003,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.1
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.2
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.1
+    },
+    {
+      "hidden_size": 32,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.2
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 1,
+      "learning_rate": 0.001,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 1,
+      "learning_rate": 0.0003,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.1
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.2
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.1
+    },
+    {
+      "hidden_size": 64,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.2
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 1,
+      "learning_rate": 0.001,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 1,
+      "learning_rate": 0.0003,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.1
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "learning_rate": 0.001,
+      "dropout": 0.2
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.0
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.1
+    },
+    {
+      "hidden_size": 128,
+      "num_layers": 2,
+      "learning_rate": 0.0003,
+      "dropout": 0.2
+    }
+  ],
+  "weight_decay": 0.0001
+}
