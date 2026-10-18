@@ -126,7 +126,7 @@ def run(args):
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     df, z, scaler, target_idx, train_end, val_end = load_data(args.csv)
-    save_correlation_heatmap(df, train_end, out)
+    # save_correlation_heatmap(df, train_end, out)
     manifest = {'features': FEATURE_COLS, 'target': TARGET_COL, 'seq_len': SEQ_LEN,
                 'horizon': HORIZON, 'train_end': train_end, 'val_end': val_end,
                 'rows': len(df), 'batch': args.batch, 'epochs': args.epochs,
@@ -138,11 +138,13 @@ def run(args):
             raise ValueError('Existing output has a different experiment configuration. Use a new --out directory.')
     else:
         manifest_file.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+
     train_ds = WindowDataset(z, SEQ_LEN, train_end, SEQ_LEN, HORIZON, target_idx)
     val_ds = WindowDataset(z, train_end, val_end, SEQ_LEN, HORIZON, target_idx)
     test_ds = WindowDataset(z, val_end, len(z), SEQ_LEN, HORIZON, target_idx)
     train_loader = make_loader(train_ds, args.batch, True)
     val_loader = make_loader(val_ds, args.batch, False)
+    
     target_scale = float(scaler.scale_[target_idx])
     target_mean = float(scaler.mean_[target_idx])
     runs_file = out / 'grid_results.csv'

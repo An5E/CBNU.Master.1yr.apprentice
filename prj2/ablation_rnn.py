@@ -209,8 +209,12 @@ def run(args):
     rows = pd.read_csv(runs_file).to_dict('records') if runs_file.exists() else []
     ckpts = out / 'checkpoints'; ckpts.mkdir(exist_ok=True)
     histories = out / 'histories'; histories.mkdir(exist_ok=True)
-    conditions = [('A1', 'ALL', list(FULL_FEATURES), length) for length in LENGTHS]
+    conditions = []# [('A1', 'ALL', list(FULL_FEATURES), length) for length in LENGTHS]
     conditions.append(('A2', 'OT_ONLY', [TARGET_COL], BASE_LENGTH))
+    conditions.append(('A2', 'H1', ["HUFL","MUFL","LUFL",TARGET_COL], BASE_LENGTH))
+    conditions.append(('A2', 'H2', ["HUFL","HULL",TARGET_COL], BASE_LENGTH))
+    conditions.append(('A2', 'H3', ["HUFL","HULL","MUFL","MULL",TARGET_COL], BASE_LENGTH))
+    conditions.append(('A2', 'H4', ["MULL","LUFL",TARGET_COL], BASE_LENGTH))
     for name in MODELS:
         params = best_params[name]
         for study, features_id, features, seq_len in conditions:
