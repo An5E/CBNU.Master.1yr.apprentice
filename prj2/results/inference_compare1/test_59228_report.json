@@ -1,0 +1,58 @@
+{
+  "csv": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\assets\\ETTm2.csv",
+  "csv_sha256": "fa470b4ffeac8f96f325abf027fe1c3cad1149560eabffc6d254abb72de21a62",
+  "split": "test",
+  "origin": "2018-03-09 23:00:00",
+  "horizon": 96,
+  "checkpoint_count": 4,
+  "results": [
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\RNN_OT_ONLY_L672.pt",
+      "label": "RNN_OT_ONLY_L672",
+      "model": "RNN",
+      "features": "OT",
+      "seq_len": 672,
+      "best_epoch": 9,
+      "MSE": 15.86790514314408,
+      "MAE": 3.1660941010740253,
+      "RMSE": 3.983453921302979,
+      "R2": 0.6460971321356832
+    },
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\LSTM_OT_ONLY_L672.pt",
+      "label": "LSTM_OT_ONLY_L672",
+      "model": "LSTM",
+      "features": "OT",
+      "seq_len": 672,
+      "best_epoch": 6,
+      "MSE": 5.478262198035924,
+      "MAE": 1.6884870514640442,
+      "RMSE": 2.3405687766087806,
+      "R2": 0.8778179800479045
+    },
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\GRU_OT_ONLY_L672.pt",
+      "label": "GRU_OT_ONLY_L672",
+      "model": "GRU",
+      "features": "OT",
+      "seq_len": 672,
+      "best_epoch": 2,
+      "MSE": 13.203659715986575,
+      "MAE": 2.793517076847291,
+      "RMSE": 3.633684041848792,
+      "R2": 0.7055179623498604
+    },
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\GRU_H1_L672.pt",
+      "label": "GRU_H1_L672",
+      "model": "GRU",
+      "features": "HUFL|MUFL|LUFL|OT",
+      "seq_len": 672,
+      "best_epoch": 1,
+      "MSE": 9.271224604056254,
+      "MAE": 2.3624802636390636,
+      "RMSE": 3.0448685692581634,
+      "R2": 0.7932233053833595
+    }
+  ]
+}
