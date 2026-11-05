@@ -4,4 +4,7 @@
 // conda activate torch-base
 
 - 프로젝트2 (prj2) 입력 데이터로 활용한 데이터셋을 다음 github repository로부터 인용     
-  -> https://github.com/zhouhaoyi/ETDataset
+  -> https://github.com/zhouhaoyi/ETDataset  
+
+- 프로젝트3 (prj3) 입력 데이터로 활용한 데이터셋을 다음 github repository에서 인용  
+  -> https://github.com/waico/skab   
