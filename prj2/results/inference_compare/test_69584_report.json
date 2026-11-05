@@ -1,0 +1,58 @@
+{
+  "csv": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\assets\\ETTm2.csv",
+  "csv_sha256": "fa470b4ffeac8f96f325abf027fe1c3cad1149560eabffc6d254abb72de21a62",
+  "split": "test",
+  "origin": "2018-06-25 20:00:00",
+  "horizon": 96,
+  "checkpoint_count": 4,
+  "results": [
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\RNN_OT_ONLY_L672.pt",
+      "label": "RNN_OT_ONLY_L672",
+      "model": "RNN",
+      "features": "OT",
+      "seq_len": 672,
+      "best_epoch": 9,
+      "MSE": 0.7695018218617232,
+      "MAE": 0.6192358660793164,
+      "RMSE": 0.8772125294714636,
+      "R2": 0.9094872881536419
+    },
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\LSTM_OT_ONLY_L672.pt",
+      "label": "LSTM_OT_ONLY_L672",
+      "model": "LSTM",
+      "features": "OT",
+      "seq_len": 672,
+      "best_epoch": 6,
+      "MSE": 4.701182186910216,
+      "MAE": 1.8685378254191554,
+      "RMSE": 2.168220972804713,
+      "R2": 0.44702307839694766
+    },
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\GRU_OT_ONLY_L672.pt",
+      "label": "GRU_OT_ONLY_L672",
+      "model": "GRU",
+      "features": "OT",
+      "seq_len": 672,
+      "best_epoch": 2,
+      "MSE": 3.7202002831993597,
+      "MAE": 1.5257754012279694,
+      "RMSE": 1.9287820725005091,
+      "R2": 0.5624111513741524
+    },
+    {
+      "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\GRU_H1_L672.pt",
+      "label": "GRU_H1_L672",
+      "model": "GRU",
+      "features": "HUFL|MUFL|LUFL|OT",
+      "seq_len": 672,
+      "best_epoch": 1,
+      "MSE": 6.934789961396629,
+      "MAE": 2.175754884823457,
+      "RMSE": 2.6333989370007402,
+      "R2": 0.1842947896181809
+    }
+  ]
+}

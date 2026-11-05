@@ -1,0 +1,5 @@
+checkpoint,label,model,features,seq_len,best_epoch,MSE,MAE,RMSE,R2
+D:\KKW\_Repository\VSCode\github\CBNU.Master.1yr.apprentice\prj2\results\ablation_ot2\checkpoints\LSTM_OT_ONLY_L672.pt,LSTM_OT_ONLY_L672,LSTM,OT,672,6,5.478262198035924,1.6884870514640442,2.3405687766087806,0.8778179800479045
+D:\KKW\_Repository\VSCode\github\CBNU.Master.1yr.apprentice\prj2\results\ablation_ot2\checkpoints\GRU_H1_L672.pt,GRU_H1_L672,GRU,HUFL|MUFL|LUFL|OT,672,1,9.271224604056254,2.3624802636390636,3.0448685692581634,0.7932233053833595
+D:\KKW\_Repository\VSCode\github\CBNU.Master.1yr.apprentice\prj2\results\ablation_ot2\checkpoints\GRU_OT_ONLY_L672.pt,GRU_OT_ONLY_L672,GRU,OT,672,2,13.203659715986575,2.793517076847291,3.633684041848792,0.7055179623498604
+D:\KKW\_Repository\VSCode\github\CBNU.Master.1yr.apprentice\prj2\results\ablation_ot2\checkpoints\RNN_OT_ONLY_L672.pt,RNN_OT_ONLY_L672,RNN,OT,672,9,15.86790514314408,3.1660941010740253,3.983453921302979,0.6460971321356832

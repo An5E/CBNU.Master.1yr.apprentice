@@ -1,0 +1,22 @@
+{
+  "checkpoint": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\results\\ablation_ot2\\checkpoints\\GRU_OT_ONLY_L672.pt",
+  "csv": "D:\\KKW\\_Repository\\VSCode\\github\\CBNU.Master.1yr.apprentice\\prj2\\assets\\ETTm2.csv",
+  "csv_sha256": "fa470b4ffeac8f96f325abf027fe1c3cad1149560eabffc6d254abb72de21a62",
+  "model": "GRU",
+  "features": [
+    "OT"
+  ],
+  "seq_len": 672,
+  "horizon": 96,
+  "split": "test",
+  "forecast_origin": "2018-03-09 23:00:00",
+  "best_epoch": 2,
+  "metrics": {
+    "MSE": 13.203659715986575,
+    "MAE": 2.793517076847291,
+    "RMSE": 3.633684041848792,
+    "R2": 0.7055179623498604
+  },
+  "prediction_csv": "results\\inference_ot\\GRU_GRU_OT_ONLY_L672_test_59228_prediction.csv",
+  "chart": "results\\inference_ot\\GRU_GRU_OT_ONLY_L672_test_59228_chart.png"
+}
